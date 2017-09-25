@@ -57,14 +57,20 @@
       },
       methods: {
         addTodo : function(e){
+          //簡單驗證，不可為空值
           if (this.newTodo) {
-            todoRef.push({
+            //將資料新增至firebase，並取得key值
+            var postKey = todoRef.push({
               content: this.newTodo,
               date: new Date(Date.now()).toLocaleString(), //字串
               completed: false
+            }).key;
+
+            //將key值更新至欄位當中
+            todoRef.child(postKey).update({
+              key: postKey
             });
           }
-          console.log();
           this.newTodo = '';
         },
         removeTodo: function(todo){
