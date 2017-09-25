@@ -55,6 +55,13 @@
         newTodo: "",
         todos: []
       },
+      mounted () {
+        let self = this;
+        todoRef.on('value', function(snapshot) {
+          self.todos = snapshot.val();
+          console.log(self.todos);
+        })
+      },
       methods: {
         addTodo : function(e){
           //簡單驗證，不可為空值
