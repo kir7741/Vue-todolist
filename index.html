@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Vue todolist</title>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+</head>
+
+<body>
+  <div id="app">
+    <input type="text" placeholder="What to do next" 
+            v-model="newTodo"
+            @keyup.enter="addTodo">
+    <input type="submit" id="btn_add" value="Add" @click.prevent="addTodo"/>
+    <draggable v-model="todos">
+      <transition-group name="slide">
+        <div v-for="todo in todos" 
+              :class="{active: todo.completed}"
+              :key="todo">
+          <input type="checkbox" v-model="todo.completed">
+          {{todo.content}}-
+          <a @click.prevent="removeTodo(todo)" href="#">刪除</a>
+        </div>
+      </transition-group>
+    </draggable>
+      <pre>{{todos}}</pre>
+  </div>
+
+  
+
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/vue"></script>
+  <script src="https://cdn.jsdelivr.net/sortable/1.4.2/Sortable.min.js"></script>
+  <script src="https://cdn.rawgit.com/David-Desmaisons/Vue.Draggable/master/dist/vuedraggable.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.3.1/firebase.js"></script>
+  <script>
+    // Initialize Firebase
+    const config = {
+      apiKey: "AIzaSyAVhjHofKm_A0XqJEb2xPhMQiJ8HTr6gt0",
+      authDomain: "vue-todo-fc61b.firebaseapp.com",
+      databaseURL: "https://vue-todo-fc61b.firebaseio.com",
+      storageBucket: "vue-todo-fc61b.appspot.com"
+    };
+    firebase.initializeApp(config);
+    let todoRef = firebase.database().ref('todolist')
+    //vue.js
+
+    var app = new Vue({
+      el: "#app",
+      data: {
+        newTodo: "",
+        todos: []
+      },
+      methods: {
+        addTodo : function(e){
+          if (this.newTodo) {
+            todoRef.push({
+              content: this.newTodo,
+              date: new Date(Date.now()).toLocaleString(), //字串
+              completed: false
+            });
+          }
+          console.log();
+          this.newTodo = '';
+        },
+        removeTodo: function(todo){
+          this.todos.splice(this.todos.indexOf(todo), 1);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
