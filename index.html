@@ -5,35 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Vue todolist</title>
+  <link rel="stylesheet" href="css/normalize.css">
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
   <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="css/main.css">
 </head>
 
 <body>
   <div id="app">
-    <input type="text" placeholder="What to do next" 
-            v-model="newTodo"
-            @keyup.enter="addTodo">
-    <input type="submit" id="btn_add" value="Add" @click.prevent="addTodo"/>
-    <draggable v-model="todos">
-      <transition-group name="slide">
-        <div v-for="(todo, idx) in todos" 
-              :class="{active: todo.completed}"
-              :key="todo">
-          <input type="checkbox" v-model="todo.completed">
-          {{todo.content}}-
-          <a @click.prevent="removeTodo(todo)" href="#">刪除</a>
-        </div>
-      </transition-group>
-    </draggable>
-      <pre>{{todos}}</pre>
+    <div class="form-set">
+      <div class="input-group">
+        <input type="text" class="form-control" placeholder="What to do next" 
+        v-model="newTodo"
+        @keyup.enter="addTodo">
+        <span class="input-group-btn">
+          <button class="btn btn-default" @click.prevent="addTodo" type="button">Add</button>
+        </span>
+      </div> 
+    </div>
+    <div class="list container">
+      <div class="row">
+        <transition-group name="slide">
+          <div class="col-sm-6 m-b-2"
+               v-for="(todo, idx) in todos"
+               :key="todo.content">
+            <div class="list-card" :class="{active: todo.completed}">
+              <p>{{todo.date}}</p>
+              <p>
+                <input type="checkbox" v-model="todo.completed"/>
+                <span class="p-y-2" :class="{active: todo.completed}">{{todo.content}}</span>
+              </p>
+              <button class="btn-del" @click.prevent="removeTodo(todo)">x</button>
+            </div>
+          </div>
+        </transition-group>
+      </div>
+    </div>
   </div>
 
 
   <script src="https://www.gstatic.com/firebasejs/4.3.1/firebase.js"></script>
   <script src="https://unpkg.com/vue"></script>
-  <script src="https://cdn.jsdelivr.net/sortable/1.4.2/Sortable.min.js"></script>
-  <script src="https://cdn.rawgit.com/David-Desmaisons/Vue.Draggable/master/dist/vuedraggable.min.js"></script>
  
   <script>
     // Initialize Firebase
@@ -53,6 +65,7 @@
         newTodo: "",
         todos: []
       },
+      //將firebase的資料渲染在畫面上
       mounted () {
         let self = this;
         todoRef.on('value', function(snapshot) {
@@ -61,7 +74,7 @@
         })
       },
       methods: {
-        addTodo : function(e){
+        addTodo : function (e) {
           //簡單驗證，不可為空值
           if (this.newTodo) {
             //將資料新增至firebase，並取得key值
@@ -78,7 +91,8 @@
           }
           this.newTodo = '';
         },
-        removeTodo: function(todo){
+        //刪除指定的key
+        removeTodo: function (todo) {
           todoRef.child(todo["key"]).remove();
         }
       }
