@@ -17,7 +17,7 @@
     <input type="submit" id="btn_add" value="Add" @click.prevent="addTodo"/>
     <draggable v-model="todos">
       <transition-group name="slide">
-        <div v-for="todo in todos" 
+        <div v-for="(todo, idx) in todos" 
               :class="{active: todo.completed}"
               :key="todo">
           <input type="checkbox" v-model="todo.completed">
@@ -29,14 +29,12 @@
       <pre>{{todos}}</pre>
   </div>
 
-  
 
-  <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.3.1/firebase.js"></script>
   <script src="https://unpkg.com/vue"></script>
   <script src="https://cdn.jsdelivr.net/sortable/1.4.2/Sortable.min.js"></script>
   <script src="https://cdn.rawgit.com/David-Desmaisons/Vue.Draggable/master/dist/vuedraggable.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/4.3.1/firebase.js"></script>
+ 
   <script>
     // Initialize Firebase
     const config = {
@@ -81,7 +79,7 @@
           this.newTodo = '';
         },
         removeTodo: function(todo){
-          this.todos.splice(this.todos.indexOf(todo), 1);
+          todoRef.child(todo["key"]).remove();
         }
       }
     });
