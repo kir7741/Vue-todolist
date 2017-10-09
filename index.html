@@ -106,15 +106,12 @@
           todoRef.child(todo["key"]).remove();
         },
         signIn : function () {
-          let self = this;
           const provider = new firebase.auth.FacebookAuthProvider();
           provider.addScope('user_birthday');
           // [START signin]
           firebase.auth().signInWithPopup(provider).then(function(result) {
             let token = result.credential.accessToken;
             // 使用者資訊
-            self.currentUserName = result.user.displayName;
-            self.splash = !self.splash;
           }).catch(function(error) {
             // 處理錯誤
             let errorCode = error.code;
@@ -125,14 +122,16 @@
               console.error(error);
             }
           });
+          this.currentUserName = result.user.displayName;
+          this.splash = !this.splash;
+          console.log(this.currentUser,this.splash);
         },
 
         signOut: function(){
-          console.log("a",this.currentUser);
           firebase.auth().signOut();
           this.currentUser="";
-          self.splash = !self.splash;
-          console.log("a",this.currentUser);
+          this.splash = !this.splash;
+          console.log(this.currentUser,this.splash);
         }
       }
     });
