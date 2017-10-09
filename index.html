@@ -13,7 +13,15 @@
 
 <body>
   <div id="app">
-    <div class="form-set">
+    <section id="page-splash" v-if="!currentUserName">
+      <button type="button" class="FbSignIn btn btn-default" @click.prevent="signIn">Sign in with Facebook</button>
+    </section>
+    <nav v-if="currentUserName">
+      <div class="btn-group" role="group" aria-label="...">
+        <button type="button" class="btn btn-default" @click.prevent="signOut">Signout</button>
+      </div>     
+    </nav>
+    <div class="form-set" v-if="currentUserName">
       <div class="input-group">
         <input type="text" class="form-control" placeholder="What to do next" 
         v-model="newTodo"
@@ -23,7 +31,7 @@
         </span>
       </div> 
     </div>
-    <div class="list container">
+    <div class="list container" v-if="currentUserName">
       <div class="row">
         <transition-group name="slide">
           <div class="col-sm-6 m-b-2"
@@ -56,6 +64,7 @@
       storageBucket: "vue-todo-fc61b.appspot.com"
     };
     firebase.initializeApp(config);
+
     let todoRef = firebase.database().ref('todolist')
     //vue.js
 
@@ -63,14 +72,14 @@
       el: "#app",
       data: {
         newTodo: "",
-        todos: []
+        todos: [],
+        currentUserName:''
       },
       //將firebase的資料渲染在畫面上
       created () {
         let self = this;
         todoRef.on('value', function(snapshot) {
           self.todos = snapshot.val();
-          console.log(self.todos);
         })
       },
       methods: {
@@ -78,7 +87,7 @@
           //簡單驗證，不可為空值
           if (this.newTodo) {
             //將資料新增至firebase，並取得key值
-            var postKey = todoRef.push({
+              let postKey = todoRef.push({
               content: this.newTodo,
               date: new Date(Date.now()).toLocaleString(), //字串
               completed: false
@@ -94,6 +103,31 @@
         //刪除指定的key
         removeTodo: function (todo) {
           todoRef.child(todo["key"]).remove();
+        },
+        signIn : function () {
+          let self = this;
+          const provider = new firebase.auth.FacebookAuthProvider();
+          provider.addScope('user_birthday');
+          // [START signin]
+          firebase.auth().signInWithPopup(provider).then(function(result) {
+            let token = result.credential.accessToken;
+            // 使用者資訊
+            self.currentUserName = result.user.displayName;
+          }).catch(function(error) {
+            // 處理錯誤
+            let errorCode = error.code;
+            // 如果一組帳戶同時使用兩種登入模式
+            if (errorCode === 'auth/account-exists-with-different-credential') {
+              alert('You have already signed up with a different auth provider for that email.');
+            } else {
+              console.error(error);
+            }
+          });
+          this.currentUser = firebase.auth().currentUser
+        },
+        signOut: function(){
+          firebase.auth().signOut();
+          this.currentUser="";
         }
       }
     });
