@@ -108,9 +108,11 @@
         signIn : function () {
           const provider = new firebase.auth.FacebookAuthProvider();
           provider.addScope('user_birthday');
+          let that = this;
           // [START signin]
           firebase.auth().signInWithPopup(provider).then(function(result) {
             let token = result.credential.accessToken;
+            that.currentUserName = result.user.displayName;
             // 使用者資訊
           }).catch(function(error) {
             // 處理錯誤
@@ -122,7 +124,6 @@
               console.error(error);
             }
           });
-          this.currentUserName = result.user.displayName;
           this.splash = !this.splash;
           console.log(this.currentUser,this.splash);
         },
