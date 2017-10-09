@@ -125,9 +125,12 @@
           });
           this.currentUser = firebase.auth().currentUser
         },
+
         signOut: function(){
+          console.log(firebase.auth());
           firebase.auth().signOut();
           this.currentUser="";
+          console.log("a",firebase.auth());
         }
       }
     });
