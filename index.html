@@ -14,11 +14,17 @@
 <body>
   <div id="app">
     <section id="page-splash" v-show="splash">
-      <button type="button" class="FbSignIn btn btn-default" @click.prevent="signIn">Sign in with Facebook</button>
+      <button type="button" class="googleSignIn btn btn-default" @click.prevent="googleSignIn">
+          <i class="fa fa-google"></i>Sign in with Google
+      </button>
+      <button type="button" class="FbSignIn btn btn-default" @click.prevent="FBsignIn">
+        <i class="fa fa-facebook-official"></i>Sign in with Facebook
+      </button>
     </section>
-    <nav>
-      <div class="btn-group" role="group" aria-label="...">
-        <button type="button" class="btn btn-default" @click.prevent="signOut">Signout</button>
+    <nav class="clearfix">
+      <div class="btn-group pull-right" role="group" aria-label="...">
+        <button type="button" class="signOut btn btn-default" @click.prevent="signOut">
+          <i class="fa fa-user-circle-o"></i>Sign out</button>
       </div>     
     </nav>
     <div class="form-set">
@@ -64,55 +70,64 @@
       storageBucket: "vue-todo-fc61b.appspot.com"
     };
     firebase.initializeApp(config);
+    let todoRef = firebase.database().ref('todolist');
 
-    let todoRef = firebase.database().ref('todolist')
     //vue.js
 
     var app = new Vue({
       el: "#app",
       data: {
         newTodo: "",
-        todos: [],
+        todos: "",
         splash: true,
-        currentUserName:''
+        currentUserName:"",
+        currentUserId:""
       },
       //將firebase的資料渲染在畫面上
-      created () {
+      updated () {
+        let userId = firebase.auth().currentUser.uid;
         let self = this;
-        todoRef.on('value', function(snapshot) {
-          self.todos = snapshot.val();
-        })
+        todoRef.once('value', function(snapshot) {
+          self.todos = snapshot.val()[userId];
+        });
       },
       methods: {
+        //增加資料
         addTodo : function (e) {
           //簡單驗證，不可為空值
           if (this.newTodo) {
-            //將資料新增至firebase，並取得key值
-              let postKey = todoRef.push({
+            //取得key值
+            let newPostKey = todoRef.push().key; 
+            let newPost = {
+              author: this.currentUserName,
+              key: newPostKey,
               content: this.newTodo,
               date: new Date(Date.now()).toLocaleString(), //字串
               completed: false
-            }).key;
-
-            //將key值更新至欄位當中
-            todoRef.child(postKey).update({
-              key: postKey
-            });
+            };
+            let updatePost = {};
+            updatePost[this.currentUserId + '/' + newPostKey] = newPost;
+            //將資料新增至firebase
+            todoRef.update(updatePost);
           }
           this.newTodo = '';
         },
         //刪除指定的key
         removeTodo: function (todo) {
-          todoRef.child(todo["key"]).remove();
+          let postKey = todo.key;
+          firebase.database().ref('/todolist/' + this.currentUserId).child(postKey).remove();
+          /*firebase.database().ref('/todolist/' + this.currentUserId + '/' + postKey).remove();*/
         },
-        signIn : function () {
+        FBsignIn : function () {
           const provider = new firebase.auth.FacebookAuthProvider();
           provider.addScope('user_birthday');
-          let that = this;
-          // [START signin]
+          let self = this;
+          //登入開始
           firebase.auth().signInWithPopup(provider).then(function(result) {
             let token = result.credential.accessToken;
-            that.currentUserName = result.user.displayName;
+            self.currentUserName = result.user.displayName;
+            self.currentUserId = result.user.uid;
+            self.splash = !self.splash;
             // 使用者資訊
           }).catch(function(error) {
             // 處理錯誤
@@ -124,15 +139,32 @@
               console.error(error);
             }
           });
-          this.splash = !this.splash;
-          console.log(this.currentUser,this.splash);
+          //登入結束
         },
-
-        signOut: function(){
+        googleSignIn : function (){
+          const provider = new firebase.auth.GoogleAuthProvider();
+          provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
+          let self = this;
+          firebase.auth().signInWithPopup(provider).then(function(result) {
+            let token = result.credential.accessToken;
+            self.currentUserName = result.user.displayName;
+            self.currentUserId = result.user.uid;
+            self.splash = !self.splash;
+          }).catch(function(error) {
+            let errorCode = error.code;
+            if (errorCode === 'auth/account-exists-with-different-credential') {
+              alert('You have already signed up with a different auth provider for that email.');
+              // If you are using multiple auth providers on your app you should handle linking
+              // the user's accounts here.
+            } else {
+              console.error(error);
+            }
+          });
+        },
+        signOut (){
           firebase.auth().signOut();
           this.currentUser="";
           this.splash = !this.splash;
-          console.log(this.currentUser,this.splash);
         }
       }
     });
