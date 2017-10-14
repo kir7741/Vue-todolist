@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Vue todolist</title>
   <link rel="stylesheet" href="css/normalize.css">
-  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+    crossorigin="anonymous">
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN"
+    crossorigin="anonymous">
   <link rel="stylesheet" href="css/main.css">
 </head>
 
 <body>
   <div id="app">
     <section id="page-splash" v-show="splash">
-      <button type="button" class="googleSignIn btn btn-default" @click.prevent="googleSignIn">
-          <i class="fa fa-google"></i>Sign in with Google
-      </button>
       <button type="button" class="FbSignIn btn btn-default" @click.prevent="FbSignIn">
         <i class="fa fa-facebook-official"></i>Sign in with Facebook
       </button>
@@ -28,28 +28,30 @@
       <div class="btn-group pull-right" role="group" aria-label="...">
         <button type="button" class="signOut btn btn-default" @click.prevent="signOut">
           <i class="fa fa-user-circle-o"></i>Sign out</button>
-      </div>     
+      </div>
     </nav>
     <div class="form-set">
-      <div class="input-group">
-        <input type="text" class="form-control" placeholder="What to do next" 
-        v-model="newTodo"
-        @keyup.enter="addTodo">
+      <div class="input-group m-b-2">
+        <input type="text" class="form-control" placeholder="What to do next" v-model="newTodo" @keyup.enter="addTodo">
         <span class="input-group-btn">
           <button class="btn btn-default" @click.prevent="addTodo" type="button">Add</button>
         </span>
-      </div> 
+      </div>
+      <div class="btn-group" role="group">
+        <button type="button" title="刪除已完成事項" class="d-completed btn btn-default"
+         @click.prevent="delCompleted">
+          <i class="fa fa-trash"></i>
+        </button>
+      </div>
     </div>
     <div class="list container">
       <div class="row">
         <transition-group name="slide">
-          <div class="col-sm-6 m-b-2"
-               v-for="(todo, idx) in todos"
-               :key="todo.content">
+          <div class="col-sm-6 m-b-2" v-for="(todo, idx) in todos" :key="todo.content">
             <div class="list-card" :class="{active: todo.completed}">
               <p>{{todo.date}}</p>
               <p>
-                <input type="checkbox" v-model="todo.completed"/>
+                <input type="checkbox" @click.prevent="completed(todo)" />
                 <span class="p-y-2" :class="{active: todo.completed}">{{todo.content}}</span>
               </p>
               <button class="btn-del" @click.prevent="removeTodo(todo)">x</button>
@@ -63,7 +65,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/4.3.1/firebase.js"></script>
   <script src="https://unpkg.com/vue"></script>
- 
+
   <script>
     // Initialize Firebase
     const config = {
@@ -83,30 +85,35 @@
         newTodo: "",
         todos: "",
         splash: true,
-        currentUserName:"",
-        currentUserId:""
+        currentUserName: "",
+        currentUserId: "",
+        doneTodo:[]
       },
-      //將firebase的資料渲染在畫面上
-      updated () {
+      mounted() {
+        let ref = firebase.database().ref('/todolist/' + this.currentUserId);
+        console.log(ref);
+      },
+      //將firebase的資料渲染在畫面上(read, update)
+      updated() {
         let userId = firebase.auth().currentUser.uid;
         let self = this;
-        todoRef.once('value', function(snapshot) {
+        todoRef.once('value', function (snapshot) {
           self.todos = snapshot.val()[userId];
         });
       },
       methods: {
-        //增加資料
-        addTodo : function (e) {
+        //creat 資料
+        addTodo: function (e) {
           //簡單驗證，不可為空值
           if (this.newTodo) {
             //取得key值
-            let newPostKey = todoRef.push().key; 
+            let newPostKey = todoRef.push().key;
             let newPost = {
               author: this.currentUserName,
               key: newPostKey,
               content: this.newTodo,
               date: new Date(Date.now()).toLocaleString(), //字串
-              completed: false
+              completed: false //是否完成
             };
             let updatePost = {};
             updatePost[this.currentUserId + '/' + newPostKey] = newPost;
@@ -115,24 +122,48 @@
           }
           this.newTodo = '';
         },
-        //刪除指定的key
+        //delete資料(刪除指定的key)
         removeTodo: function (todo) {
           let postKey = todo.key;
+
           firebase.database().ref('/todolist/' + this.currentUserId).child(postKey).remove();
           /*firebase.database().ref('/todolist/' + this.currentUserId + '/' + postKey).remove();*/
         },
-        FbSignIn : function () {
+        //更改完成狀態
+        completed: function (todo) {
+          let postKey = todo.key;
+          if (!todo.completed) {
+            firebase.database().ref('/todolist/' + this.currentUserId + '/' + postKey).update({ completed: true });
+            this.doneTodo.push(postKey);
+          } else {
+            firebase.database().ref('/todolist/' + this.currentUserId + '/' + postKey).update({ completed: false });
+            let idx =  this.doneTodo.indexOf(postKey);
+            if (idx > -1) {
+              this.doneTodo.splice(idx,1);
+            }
+          }
+        },
+        //刪除所有已完成
+        delCompleted: function (){
+          for (let i in this.doneTodo) {
+            firebase.database().ref('/todolist/' + this.currentUserId).child(this.doneTodo[i]).remove();
+          }
+        },
+        //fb登入
+        FbSignIn: function () {
           const provider = new firebase.auth.FacebookAuthProvider();
           provider.addScope('user_birthday');
           let self = this;
           //登入開始
-          firebase.auth().signInWithPopup(provider).then(function(result) {
+          firebase.auth().signInWithPopup(provider).then(function (result) {
             let token = result.credential.accessToken;
+            //登入成功後設立使用者資料
             self.currentUserName = result.user.displayName;
             self.currentUserId = result.user.uid;
+            //開啟畫面
             self.splash = !self.splash;
             // 使用者資訊
-          }).catch(function(error) {
+          }).catch(function (error) {
             // 處理錯誤
             let errorCode = error.code;
             // 如果一組帳戶同時使用兩種登入模式
@@ -144,16 +175,17 @@
           });
           //登入結束
         },
-        googleSignIn : function (){
+        //google登入
+        googleSignIn: function () {
           const provider = new firebase.auth.GoogleAuthProvider();
           provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
           let self = this;
-          firebase.auth().signInWithPopup(provider).then(function(result) {
+          firebase.auth().signInWithPopup(provider).then(function (result) {
             let token = result.credential.accessToken;
             self.currentUserName = result.user.displayName;
             self.currentUserId = result.user.uid;
             self.splash = !self.splash;
-          }).catch(function(error) {
+          }).catch(function (error) {
             let errorCode = error.code;
             if (errorCode === 'auth/account-exists-with-different-credential') {
               alert('You have already signed up with a different auth provider for that email.');
@@ -164,16 +196,17 @@
             }
           });
         },
-        GhSignIn: function (){
+        //github登入
+        GhSignIn: function () {
           const provider = new firebase.auth.GithubAuthProvider();
           provider.addScope('repo');
           let self = this;
-          firebase.auth().signInWithPopup(provider).then(function(result) {
+          firebase.auth().signInWithPopup(provider).then(function (result) {
             let token = result.credential.accessToken;
             self.currentUserName = result.user.displayName;
             self.currentUserId = result.user.uid;
             self.splash = !self.splash;
-          }).catch(function(error) {
+          }).catch(function (error) {
             let errorCode = error.code;
             if (errorCode === 'auth/account-exists-with-different-credential') {
               alert('You have already signed up with a different auth provider for that email.');
@@ -182,13 +215,14 @@
             }
           });
         },
-        signOut (){
+        signOut() {
           firebase.auth().signOut();
-          this.currentUser="";
+          this.currentUser = "";
           this.splash = !this.splash;
         }
       }
     });
   </script>
 </body>
+
 </html>
